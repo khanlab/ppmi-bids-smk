@@ -1,0 +1,2 @@
+singularity:
+  heudiconv: '/project/6050199/akhanf/singularity/bids-apps/nipy_heudiconv_0.5.4.sif' # 'docker://nipy/heudiconv:0.5.4'
