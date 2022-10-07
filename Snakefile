@@ -31,7 +31,7 @@ rule all_bids:
 checkpoint download_from_csv:
     """ Run this job on CBS server node, using the web browser to get the URL csv, saved into url_csv/"""
     input: 'url_csv/{prefix}.csv'
-    output: protected(directory('raw_zips/{prefix}'))
+    output: directory('raw_zips/{prefix}')
     shell: 
         'mkdir -p {output} && for url in `cat {input}`; do wget $url --directory-prefix={output}; done '
 
