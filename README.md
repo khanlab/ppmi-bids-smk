@@ -25,12 +25,15 @@ It does this by:
  1. Install snakemake and pypmi 
  2. Use a web browser (see note 1) to download the URL csv file into 
    the `url_csv` folder
- 3. Run a dry-run of the workflow to download (prints what it will do)::
-    snakemake --dry-run --until download_from_csv
+ 3. Run a dry-run of the workflow to download (dry-run, print shell cmd, reason)::
+    snakemake -npr --until download_from_csv
  4. Actually run it::
     snakemake --cores all --until download_from_csv
- 5. Run the rest of the workflow to convert::
+ 5. Dry-run the rest of the workflow (see note 2)::
+    snakemake -npr
+ 6. Run the entire workflow::
     snakemake --cores all
+
 
 
  Note 1: The IP of the system used for steps 2-4 (creating/downloading the URL csv file, 
@@ -38,3 +41,9 @@ It does this by:
   Since you want to run the workflow on a HPC that does not have a browser, one way to 
   do this is to use `sshfs` to mount the remote server on the system used for downloading.
   Or you can just copy the data afterwards. 
+
+ Note 2: Make sure this step does not try to run the `download_from_csv` rule again,
+   which would end up clearing your download directory. You may need to use the following 
+   command to clean-up the metadata to avoid this::
+    snakemake --cleanup-metadata raw_zips/*
+

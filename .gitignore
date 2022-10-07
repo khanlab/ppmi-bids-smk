@@ -1,0 +1,8 @@
+url_csv/*
+raw_zips/*
+subj_bids/*
+results/**
+resources/**
+logs/**
+.snakemake
+.snakemake/**
