@@ -56,6 +56,8 @@ T1W_SERIES = [
     'AX T1',
     'axial spgr',
     'T1W_3D_FFE AX',
+    '3D T1-weighted',
+    'SAG 3D MPRAGE',
     # this might have a contrast but I literally can't find any info on it
     'AX T1 SE C+'
 ]
@@ -119,14 +121,20 @@ FLAIR_SERIES = [
     'Ax T2 FLAIR',
     't2_tirm_tra_dark-fluid_',
     't2_tirm_tra_dark-fluid NO BLADE',
+    '3D T2 SAG FLAIR',
+    '3D T2 FLAIR',
     # T1 FLAIR -- should these be here?
     'Ax T1 FLAIR',
-    'AX T1 FLAIR'
+    'AX T1 FLAIR',
 ]
 
 BOLD_SERIES = [
     'ep2d_RESTING_STATE',
-    'ep2d_bold_rest'
+    'ep2d_bold_rest',
+    'R>L RESTING STATE FMRI ep2d_fid_basic_bold',
+    'L>R RESTING STATE FMRI ep2d_fid_basic_bold',
+    'rsfMRI_RL',
+    'rsfMRI_LR'
 ]
 
 DTI_SERIES = [
@@ -174,7 +182,9 @@ DTI_SERIES = [
     'REPEAT DTI_NON GATED',
     'REPEAT DTI_NON gated',
     'REPEAT_NON DTI_GATED',
-    'Repeat DTI Sequence'
+    'Repeat DTI Sequence',
+    'DTI_LR',
+    'DTI_RL'
 ]
 
 T2W_PDT2_SERIES = [
@@ -183,6 +193,12 @@ T2W_PDT2_SERIES = [
     'AX T2 FSE',        # only T2w (one subject)            (24-24 slices)
     '*Ax T2 FSE',       # only T2w (one subject)            (22-22 slices)
     'AXIAL  T2  FSE',   # only T2w                          (23-26 slices)
+]
+
+#unused right now:
+T2W_GRE_SERIES = [
+    'AX T2 GRE MT',
+    '2D GRE MT'
 ]
 
 

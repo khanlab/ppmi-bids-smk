@@ -10,10 +10,10 @@ def get_subject_bids_dirs(wildcards):
     have wildcards passed on to it, so we get them by globbing the url_csv dir"""
 
     prefixes, = glob_wildcards('url_csv/{prefix}.csv') 
+    files = []
     for prefix in prefixes:
         ck_output = checkpoints.parse_raw_zipfiles.get(prefix=prefix).output[0]
-        files = []
-        with open(f'raw_zips/{prefix}_mapping.json') as f:
+        with open(ck_output) as f:
             subjects = json.load(f)['all_subjects']
             files.extend(expand('subj_bids/{prefix}/sub-{subject}',
                         prefix=prefix,
@@ -32,6 +32,7 @@ checkpoint download_from_csv:
     """ Run this job on CBS server node, using the web browser to get the URL csv, saved into url_csv/"""
     input: 'url_csv/{prefix}.csv'
     output: directory('raw_zips/{prefix}')
+    group: 'dl'
     shell: 
         'mkdir -p {output} && for url in `cat {input}`; do wget $url --directory-prefix={output}; done '
 
@@ -42,6 +43,7 @@ checkpoint parse_raw_zipfiles:
         zip_dir=get_raw_zip_dir
     output: 
         'raw_zips/{prefix}_mapping.json'
+    group: 'dl'
     script: 
         'scripts/get_zipfile_mapping.py'
 
@@ -55,6 +57,11 @@ rule create_subj_zip:
         mapping = 'raw_zips/{prefix}_mapping.json'
     output:
         zip_file='subj_zips/{prefix}/{subject}.zip'
+    threads: 8
+    resources: 
+        mem_mb=32000,
+        time=30
+    group: 'subj'
     script:
         'scripts/create_subject_zip.py'
 
@@ -71,6 +78,11 @@ rule convert_subj_bids:
     shadow:
         'minimal'
     container: config['singularity']['heudiconv']
+    threads: 8
+    resources: 
+        mem_mb=32000,
+        time=30
+    group: 'subj'
     shell:
         'tmpdir=`mktemp -d` && '
         'unzip -d $tmpdir {input.zip_file} && '
@@ -87,4 +99,13 @@ rule convert_subj_bids:
         ' mkdir -p subj_bids/{wildcards.prefix} && '
         ' cp -Rv $tmpdir/bids_{wildcards.subject}/sub-{wildcards.subject} {output.bids_dir} '
         ' && rm -rf $tmpdir '
+
+rule get_sequences_json:
+    input:
+        zip_dir=get_raw_zip_dir
+    output:
+        'raw_zips/{prefix}_sequences.json'
+    group: 'dl'
+    script: 
+        'scripts/get_zipfile_sequences.py'
 
