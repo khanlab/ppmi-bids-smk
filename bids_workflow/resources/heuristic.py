@@ -51,21 +51,21 @@ def infotodict(seqinfo):
             info[t1w].append(s.series_id)
         elif ('dti' in seql) or ('diff' in seql) or ('gated' in seql) or ('dwi' in seql):
             info[dti].append(s.series_id)
-        elif 'flair' in seql:
-            info[flair].append(s.series_id)
-        elif ('rs' in seql) or ('resting' in seql):
-            info[bold].append(s.series_id)
-        elif ('nm' in seql) or ('mt' in seql):
-            info[mtw].append(s.series_id)
-        elif ('pd' in seql) or ('dual' in seql):
-            if s.dim3 < 40:
-                info[t2w].append(s.series_id)
-            else:
-                info[pdt2].append(s.series_id)
-        elif 't2' in seql:
-            info[t2w].append(s.series_id)
-        elif ('swan' in seql) or ('*' in seql):
-            info[t2starw].append(s.series_id)
+#        elif 'flair' in seql:
+#            info[flair].append(s.series_id)
+#        elif ('rs' in seql) or ('resting' in seql):
+#            info[bold].append(s.series_id)
+#        elif ('nm' in seql) or ('mt' in seql):
+#            info[mtw].append(s.series_id)
+#        elif ('pd' in seql) or ('dual' in seql):
+#            if s.dim3 < 40:
+#                info[t2w].append(s.series_id)
+#            else:
+#                info[pdt2].append(s.series_id)
+#        elif 't2' in seql:
+#            info[t2w].append(s.series_id)
+#        elif ('swan' in seql) or ('*' in seql):
+#            info[t2starw].append(s.series_id)
         else:
             lgr.warning('Skipping unrecognized series description: {}'
                         .format(s.series_description))
@@ -103,12 +103,12 @@ def custom_callable(*args):
     # there's gotta be a better way to do this, but c'est la vie
     prefix, outtypes, item_dicoms = args[:3]
     outtype = outtypes[0]
-    opts = get_parser().parse_args()
+#    opts = get_parser().parse_args()
 
     # if you don't want BIDS format then you're going to have to rename outputs
     # on your own!
-    if not opts.bids:
-        return
+#    if not opts.bids:
+#        return
 
     # do a crappy job of checking if multiple output files were generated
     # if we're only seeing one file, we're good to go
@@ -161,11 +161,11 @@ def custom_callable(*args):
         dicoms = [f for f in item_dicoms if
                   isclose(float(dcm.read_file(f, force=True).EchoTime) / 1000,
                           load_json(scaninfo).get('EchoTime'))]
-        prov_file = prefix + '_prov.ttl' if opts.with_prov else None
-        embed_metadata_from_dicoms(opts.bids, dicoms,
-                                   outname, new_prefix + '.json',
-                                   prov_file, scaninfo, TempDirs(),
-                                   opts.with_prov, opts.minmeta)
+#        prov_file = prefix + '_prov.ttl' if opts.with_prov else None
+#        embed_metadata_from_dicoms(opts.bids, dicoms,
+#                                   outname, new_prefix + '.json',
+#                                   prov_file, scaninfo, TempDirs(),
+#                                   opts.with_prov, opts.minmeta)
 
         # perform the bits of heudiconv.convert.convert that were never called
         if scaninfo and os.path.exists(scaninfo):

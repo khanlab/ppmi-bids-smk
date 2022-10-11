@@ -19,19 +19,27 @@ It does this by:
    reorganizing them, and saving as an individual zip
  - Creating the bids subject dir by extracting each subject zip 
   into a /tmp folder, then converting to BIDS with heudiconv
-   
+
+The workflow is split into two, one to download and re-package 
+the zipfiles, and another to convert those to bids.
+
 ## Instructions
 
  1. Install snakemake and pypmi 
  2. Use a web browser (see note 1) to download the URL csv file into 
    the `url_csv` folder
- 3. Run a dry-run of the workflow to download (dry-run, print shell cmd, reason)::
+ 3. Run a dry-run of the `zips_workflow` to download (dry-run, print shell cmd, reason)::
+    cd zips_workflow
     snakemake -npr --until download_from_csv
  4. Actually run it::
     snakemake --cores all --until download_from_csv
- 5. Dry-run the rest of the workflow (see note 2)::
+ 5. Dry-run the rest of the `zips_workflow` (see note 2)::
     snakemake -npr
- 6. Run the entire workflow::
+ 6. Run the entire `zips_workflow` to create the `subj_zips` folder::
+    snakemake --cores all
+ 7. Now run the `bids_workflow` to create the `subj_bids` folder::
+    cd ../bids_workflow
+    snakemake -npr
     snakemake --cores all
 
 

@@ -1,0 +1,45 @@
+configfile: 'config.yml'
+
+
+#glob the files from the zips_workflow to get the target rule files
+prefixes,subjects = glob_wildcards('../zips_workflow/subj_zips/{prefix}/{subject}.zip')
+
+rule all_bids:
+    input: 
+        expand('subj_bids/{prefix}/sub-{subject}',
+                zip,
+                prefix=prefixes,
+                subject=subjects)
+
+
+
+rule convert_subj_bids:
+    input:
+        zip_file='../zips_workflow/subj_zips/{prefix}/{subject}.zip',
+        heuristic='resources/heuristic.py'
+    output:
+        bids_dir=directory('subj_bids/{prefix}/sub-{subject}')
+    container: config['singularity']['heudiconv']
+    threads: 8
+    resources: 
+        mem_mb=32000,
+        time=30
+    group: 'subj'
+    shell:
+        'tmpdir=`mktemp -d` && '
+        'unzip -d $tmpdir {input.zip_file} && '
+        # hacky way of globbing to get sessions from the extracted zip, but avoids having to include session as a snakemake wildcard!
+        'for session in $(find $tmpdir/PPMI/{wildcards.subject} -maxdepth 1 -mindepth 1 -type d| xargs -I {{}} basename {{}}); '            
+        ' do '
+        '  heudiconv ' 
+        '  -d $tmpdir/PPMI/{{subject}}/{{session}}/*/*dcm '
+        '  -s {wildcards.subject} -ss ${{session}} '
+        '  --outdir $tmpdir/bids_{wildcards.subject} '
+        '  --heuristic {input.heuristic} '
+        '  --bids --minmeta --overwrite --group all ; '
+        ' done && '
+        ' rm -f $tmpdir/bids_{wildcards.subject}/sub-{wildcards.subject}/ses-*/scans.tsv && '
+        ' mkdir -p subj_bids/{wildcards.prefix} && '
+        ' cp -Rv $tmpdir/bids_{wildcards.subject}/sub-{wildcards.subject} {output.bids_dir} '
+        ' && rm -rf $tmpdir '
+
