@@ -4,12 +4,35 @@ configfile: 'config.yml'
 #glob the files from the zips_workflow to get the target rule files
 prefixes,subjects = glob_wildcards('../zips_workflow/subj_zips/{prefix}/{subject}.zip')
 
-rule all_bids:
+#remove bad subjects
+for i,subj in enumerate(subjects):
+    if subj in config['bad_subjects']:
+        print(f'removing subject {subj}')
+        del subjects[i]
+        del prefixes[i]
+
+
+rule all_bids_from_nii:
     input: 
         expand('subj_bids/{prefix}/sub-{subject}',
                 zip,
                 prefix=prefixes,
                 subject=subjects)
+
+
+rule all_bids_heudiconv:
+    input: 
+        expand('subj_bids_heudiconv/{prefix}/sub-{subject}',
+                zip,
+                prefix=prefixes,
+                subject=subjects)
+rule all_nii:
+    input: 
+        expand('subj_nii/{prefix}/sub-{subject}',
+                zip,
+                prefix=prefixes,
+                subject=subjects)
+
 
 
 
@@ -18,7 +41,7 @@ rule convert_subj_bids:
         zip_file='../zips_workflow/subj_zips/{prefix}/{subject}.zip',
         heuristic='resources/heuristic.py'
     output:
-        bids_dir=directory('subj_bids/{prefix}/sub-{subject}')
+        bids_dir=directory('subj_bids_heudiconv/{prefix}/sub-{subject}')
     container: config['singularity']['heudiconv']
     threads: 8
     resources: 
@@ -39,7 +62,30 @@ rule convert_subj_bids:
         '  --bids --minmeta --overwrite --group all ; '
         ' done && '
         ' rm -f $tmpdir/bids_{wildcards.subject}/sub-{wildcards.subject}/ses-*/scans.tsv && '
-        ' mkdir -p subj_bids/{wildcards.prefix} && '
+        ' mkdir -p subj_bids_heudiconv/{wildcards.prefix} && '
         ' cp -Rv $tmpdir/bids_{wildcards.subject}/sub-{wildcards.subject} {output.bids_dir} '
         ' && rm -rf $tmpdir '
 
+
+rule convert_zip_to_nii:
+    input:
+        zip_file='../zips_workflow/subj_zips/{prefix}/{subject}.zip',
+    params:
+        container_uri=config['singularity']['heudiconv']
+    output:
+        nii_dir=directory('subj_nii/{prefix}/sub-{subject}')
+    threads: 8
+    group: 'subj'
+    script:
+        'scripts/convert_bids_dcm2niix.py'
+ 
+
+rule convert_nii_to_bids:
+    input:
+        nii_dir='subj_nii/{prefix}/sub-{subject}'
+    output:
+        subj_bids_dir=directory('subj_bids/{prefix}/sub-{subject}')
+    group: 'subj'
+    threads: 8
+    script:
+        'scripts/convert_nii_to_bids.py'

@@ -1,2 +1,14 @@
 singularity:
   heudiconv: '/project/6050199/akhanf/singularity/bids-apps/nipy_heudiconv_v0.11.3.sif' # 'docker://nipy/heudiconv:v0.11.3'
+
+
+bad_subjects:
+  - '3866'
+  - '102027'
+  - '116008'
+  - '3869'
+  - '101799' 
+  - '56582'
+  - '72419'
+  - '100960'
+
