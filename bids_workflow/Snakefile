@@ -43,37 +43,6 @@ rule all_nii:
 
 
 
-rule convert_subj_bids:
-    input:
-        zip_file='../zips_workflow/subj_zips/{prefix}/{subject}.zip',
-        heuristic='resources/heuristic.py'
-    output:
-        bids_dir=directory('subj_bids_heudiconv/{prefix}/sub-{subject}')
-    container: config['singularity']['heudiconv']
-    threads: 8
-    resources: 
-        mem_mb=32000,
-        time=30
-    group: 'subj'
-    shell:
-        'tmpdir=`mktemp -d` && '
-        'unzip -d $tmpdir {input.zip_file} && '
-        # hacky way of globbing to get sessions from the extracted zip, but avoids having to include session as a snakemake wildcard!
-        'for session in $(find $tmpdir/PPMI/{wildcards.subject} -maxdepth 1 -mindepth 1 -type d| xargs -I {{}} basename {{}}); '            
-        ' do '
-        '  heudiconv ' 
-        '  -d $tmpdir/PPMI/{{subject}}/{{session}}/*/*dcm '
-        '  -s {wildcards.subject} -ss ${{session}} '
-        '  --outdir $tmpdir/bids_{wildcards.subject} '
-        '  --heuristic {input.heuristic} '
-        '  --bids --minmeta --overwrite --group all ; '
-        ' done && '
-        ' rm -f $tmpdir/bids_{wildcards.subject}/sub-{wildcards.subject}/ses-*/scans.tsv && '
-        ' mkdir -p subj_bids_heudiconv/{wildcards.prefix} && '
-        ' cp -Rv $tmpdir/bids_{wildcards.subject}/sub-{wildcards.subject} {output.bids_dir} '
-        ' && rm -rf $tmpdir '
-
-
 rule convert_zip_to_nii:
     input:
         zip_file='../zips_workflow/subj_zips/{prefix}/{subject}.zip',
@@ -113,6 +82,7 @@ rule create_dd:
         json_file='resources/dataset_description.json',
     output:
         json_file='subj_bids/{prefix}/dataset_description.json'
+    group: 'post'
     script: 'scripts/update_dataset_description.py'
    
 
@@ -124,6 +94,7 @@ rule copy_top_level:
     output:
         'subj_bids/{prefix}/.bidsignore',
         'subj_bids/{prefix}/task-rest_bold.json'
+    group: 'post'
     run: 
         for infile,outfile in zip(input,output):
             shell('cp {infile} {outfile}')
@@ -142,8 +113,19 @@ rule validate:
         validator=config['singularity']['validator'] 
 
     params:
+        #ignore headers since limitation in validator with large datasets (issue #675 in validator) 
+        validator_opts = '--ignoreNiftiHeaders --ignoreSubjectConsistency --verbose',
         bids = 'subj_bids/{prefix}'
     output:
         txt = 'subj_bids/{prefix}/code/validator.txt'
+    group: 'post'
     shell:
-        'singularity run {input.validator} {params.bids}  --verbose > {output.txt}'
+        'singularity run {input.validator} {params.bids} {params.validator_opts} > {output.txt}'
+
+
+rule delete_bad_scans:
+    params:
+        files_to_delete=config['bad_scans']
+    output: touch('badscans_deleted')
+    shell:
+        'rm -f {params.files_to_delete}'
