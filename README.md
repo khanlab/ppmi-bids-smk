@@ -18,7 +18,9 @@ It does this by:
  - Extracting the dicom files for each subject into a /tmp folder,
    reorganizing them, and saving as an individual zip
  - Creating the bids subject dir by extracting each subject zip 
-  into a /tmp folder, then converting to BIDS with heudiconv
+  into a /tmp folder, converting to nifti with dcm2niix, and copied 
+  into bids and validated per subject
+
 
 The workflow is split into two, one to download and re-package 
 the zipfiles, and another to convert those to bids.
