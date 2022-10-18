@@ -1,3 +1,5 @@
+import json
+
 configfile: 'config.yml'
 
 
@@ -7,10 +9,15 @@ prefixes,subjects = glob_wildcards('../zips_workflow/subj_zips/{prefix}/{subject
 #remove bad subjects
 for i,subj in enumerate(subjects):
     if subj in config['bad_subjects']:
-        print(f'removing subject {subj}')
+        #remove subject from the list
         del subjects[i]
         del prefixes[i]
 
+rule all:
+    input:
+        expand(
+            'subj_bids/{prefix}/code/validator.txt',
+             prefix=list(set(prefixes)))
 
 rule all_bids_from_nii:
     input: 
@@ -70,6 +77,7 @@ rule convert_subj_bids:
 rule convert_zip_to_nii:
     input:
         zip_file='../zips_workflow/subj_zips/{prefix}/{subject}.zip',
+        metadata_zip='../zips_workflow/metadata_zip/{prefix}_metadata.zip'
     params:
         container_uri=config['singularity']['heudiconv']
     output:
@@ -77,15 +85,65 @@ rule convert_zip_to_nii:
     threads: 8
     group: 'subj'
     script:
-        'scripts/convert_bids_dcm2niix.py'
+        'scripts/convert_zip_to_nii.py'
  
 
 rule convert_nii_to_bids:
     input:
-        nii_dir='subj_nii/{prefix}/sub-{subject}'
+        nii_dir='subj_nii/{prefix}/sub-{subject}',
+        bids_files=['resources/.bidsignore', #for validation
+                    'resources/task-rest_bold.json',
+                    'resources/dataset_description.json'],
+        validator=config['singularity']['validator'] 
+    params:
+        bids_dir='subj_bids/{prefix}'
     output:
         subj_bids_dir=directory('subj_bids/{prefix}/sub-{subject}')
+    log:
+        'logs/nii_to_bids/{prefix}/sub-{subject}.txt'
+    shadow: 'minimal'
     group: 'subj'
     threads: 8
     script:
         'scripts/convert_nii_to_bids.py'
+
+
+rule create_dd:
+    input:
+        json_file='resources/dataset_description.json',
+    output:
+        json_file='subj_bids/{prefix}/dataset_description.json'
+    script: 'scripts/update_dataset_description.py'
+   
+
+
+rule copy_top_level:
+    input:
+        'resources/.bidsignore',
+        'resources/task-rest_bold.json'
+    output:
+        'subj_bids/{prefix}/.bidsignore',
+        'subj_bids/{prefix}/task-rest_bold.json'
+    run: 
+        for infile,outfile in zip(input,output):
+            shell('cp {infile} {outfile}')
+
+        
+
+rule validate:
+    input:
+        dd='subj_bids/{prefix}/dataset_description.json',
+        ignore='subj_bids/{prefix}/.bidsignore',
+        json='subj_bids/{prefix}/task-rest_bold.json',
+        subjs=expand('subj_bids/{prefix}/sub-{subject}',
+                zip,
+                prefix=prefixes,
+                subject=subjects),
+        validator=config['singularity']['validator'] 
+
+    params:
+        bids = 'subj_bids/{prefix}'
+    output:
+        txt = 'subj_bids/{prefix}/code/validator.txt'
+    shell:
+        'singularity run {input.validator} {params.bids}  --verbose > {output.txt}'

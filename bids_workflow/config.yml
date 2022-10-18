@@ -1,5 +1,6 @@
 singularity:
   heudiconv: '/project/6050199/akhanf/singularity/bids-apps/nipy_heudiconv_v0.11.3.sif' # 'docker://nipy/heudiconv:v0.11.3'
+  validator: '/project/6050199/akhanf/singularity/bids-apps/bids_validator_v1.9.9.sif' # docker://bids/validator:v1.9.9'
 
 
 bad_subjects:
@@ -11,4 +12,20 @@ bad_subjects:
   - '56582'
   - '72419'
   - '100960'
+  - '60059' #series description empty -- this is fixable by renaming the nii.gz files in subj_nii folder
+  - '157424' #same
+  - '41560' # same
+  - '114534' # too many images in rsfmri
+  - '115687' # too many images in rsfmri
+  - '116337' #bad sform/qform in nifti
+  - '101516' #bad sform/qform in nifti
+  - '103809' #bad sform/qform in nifti
 
+
+#these can be deleted
+bad_scans:
+  - subj_nii/PPMI_PRODROMAL_DTI_MRI_3T/sub-85242/ses-Month24/sub-85242_ses-Month24_series-DTI_gated.nii.gz 
+  - subj_nii/PPMI_PD_DTI_MRI_3T/sub-101755/ses-Baseline/sub-101755_ses-Baseline_series-rsfMRI_LR.nii.gz
+  - subj_nii/PPMI_PD_DTI_MRI_3T/sub-101755/ses-Baseline/sub-101755_ses-Baseline_series-rsfMRI_LR_Eq_1.nii.gz
+  - subj_nii/PPMI_PRODROMAL_DTI_MRI_3T/sub-52353/ses-Month48/sub-52353_ses-Month48_series-DTI_gatedb.nii.gz
+  - subj_nii/PPMI_PD_DTI_MRI_3T/sub-102475/ses-Baseline/*rsfMRI*
