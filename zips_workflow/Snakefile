@@ -13,7 +13,7 @@ def get_subject_zips(wildcards):
         ck_output = checkpoints.parse_raw_zipfiles.get(prefix=prefix).output[0]
         with open(ck_output) as f:
             subjects = json.load(f)['all_subjects']
-            files.extend(expand('subj_zips/{prefix}/{subject}.zip',
+            files.extend(expand('subj_zips/{prefix}/{subject}.json',
                         prefix=prefix,
                         subject=subjects))
     return files
@@ -53,6 +53,8 @@ rule create_subj_zip:
     input:
         zip_dir='raw_zips/{prefix}',
         mapping = 'raw_zips/{prefix}_mapping.json'
+    params:
+        pypmi_prepare = True #whether to run pypmi_prepare on the unzipped dicoms
     output:
         zip_file='subj_zips/{prefix}/{subject}.zip'
     threads: 8
@@ -63,6 +65,13 @@ rule create_subj_zip:
     script:
         'scripts/create_subject_zip.py'
 
+rule get_subj_series_json:
+    input:
+        zip_file='subj_zips/{prefix}/{subject}.zip'
+    output:
+        'subj_zips/{prefix}/{subject}.json'
+    script: 
+        'scripts/get_subj_series_json.py'
 
 rule get_sequences_json:
     input:

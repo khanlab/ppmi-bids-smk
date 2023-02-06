@@ -19,11 +19,12 @@ with tempfile.TemporaryDirectory() as tmpdir:
             )
 
     #run pypmi clean-up on the files
-    subjects, coerced = bids._prepare_subject(f'{tmpdir}/PPMI/{snakemake.wildcards.subject}',confirm_uids=False)
+    if snakemake.params.pypmi_prepare:
+        subjects, coerced = bids._prepare_subject(f'{tmpdir}/PPMI/{snakemake.wildcards.subject}',confirm_uids=False)
 
 
-    print(subjects)
-    print(coerced)
+        print(subjects)
+        print(coerced)
 
     #zip those and copy back
     shell(
