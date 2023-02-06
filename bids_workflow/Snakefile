@@ -13,6 +13,17 @@ for i,subj in enumerate(subjects):
         del subjects[i]
         del prefixes[i]
 
+
+def get_subjects(prefix):
+    subjects, = glob_wildcards(f'../zips_workflow/subj_zips/{prefix}/{{subject}}.zip')
+ 
+    #remove bad subjects
+    for i,subj in enumerate(subjects):
+        if subj in config['bad_subjects']:
+            #remove subject from the list
+            del subjects[i]
+    return subjects
+
 rule all:
     input:
         expand(
@@ -122,10 +133,21 @@ rule validate:
     shell:
         'singularity run {input.validator} {params.bids} {params.validator_opts} > {output.txt}'
 
-
 rule delete_bad_scans:
     params:
         files_to_delete=config['bad_scans']
-    output: touch('badscans_deleted')
+    output: touch('bad_scans_removed.flag')
     shell:
         'rm -f {params.files_to_delete}'
+
+
+rule create_participants_tsv:
+    input:
+        subj_dirs=lambda wildcards: expand('subj_bids/{prefix}/sub-{subject}',
+                subject=get_subjects(wildcards.prefix),prefix=wildcards.prefix)
+    output:
+        tsv='subj_bids/{prefix}/participants.tsv'
+    script:
+        'scripts/create_participants_tsv.py' 
+
+
