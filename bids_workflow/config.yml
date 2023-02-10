@@ -3,6 +3,8 @@ singularity:
   validator: '/project/6050199/akhanf/singularity/bids-apps/bids_validator_v1.9.9.sif' # docker://bids/validator:v1.9.9'
 
 
+final_bids_dir: '/project/6033495/ext-bids/PPMI/bids'
+
 bad_subjects:
   - '3866'
   - '102027'
