@@ -1,16 +1,18 @@
 # ppmi-bids-smk
 
-Downloading & BIDS conversion snakemake workflow. Makes use of 
-[pypmi](https://github.com/rmarkello/pypmi) for dicom reorganization 
-and for the PPMI BIDS conversion heuristic file. 
+Downloading & BIDS conversion snakemake workflow for the
+[PPMI](https://www.ppmi-info.org/) dataset. 
 
 The pypmi workflow requires you to download and extract all the PPMI data
 to a central location first, and it reorganizes the dicoms in-place, then 
 runs heudiconv using Docker. This is not suitable for HPC systems with
 inode (file number) constraints, so this workflow instead deals with 
-conversion at a subject-level. 
+conversion at a subject-level. Heudiconv also chokes on some dicom images 
+because of incompatibility in dcmstack, so this workflow does not use
+heudiconv, and instead implements the heuristic in the `convert_nii_to_bids` 
+rule, and the [script](bids_workflow/scripts/convert_nii_to_bids.py) it uses.
 
-It does this by:
+The overall steps of the workflow are:
  - Downloading the zip files
  - Parsing the list of files in the zips without extracting, to
   obtain the list of subjects, and which zipfiles are associated with 
@@ -19,11 +21,14 @@ It does this by:
    reorganizing them, and saving as an individual zip
  - Creating the bids subject dir by extracting each subject zip 
   into a /tmp folder, converting to nifti with dcm2niix, and copied 
-  into bids and validated per subject
+  into bids
+ 
+The "heuristic" for BIDS conversion is now embedded in this 
 
 
 The workflow is split into two, one to download and re-package 
-the zipfiles, and another to convert those to bids.
+the zipfiles, and another to convert those to bids. Combined together,
+this is an end-to-end fully-automated workflow.
 
 ## Instructions
 
@@ -54,6 +59,7 @@ the zipfiles, and another to convert those to bids.
 
  Note 2: Make sure this step does not try to run the `download_from_csv` rule again,
    which would end up clearing your download directory. You may need to use the following 
-   command to clean-up the metadata to avoid this::
+   command to clean-up the metadata to avoid this
+   
     snakemake --cleanup-metadata raw_zips/*
 
