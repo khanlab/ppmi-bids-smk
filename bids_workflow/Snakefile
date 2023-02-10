@@ -25,17 +25,24 @@ def get_subjects(prefix):
     return subjects
 
 
-def get_output_final_bids():
+def get_output_final_bids(wildcards):
+
+    out_dir=wildcards.bids_dir
 
     subj_dirs=[]
     for prefix in list(set(prefixes)):
         
-        subj_dirs.extend(expand('{out_dir}/sub-{subject}',out_dir=config['final_bids_dir'],subject=get_subjects(prefix)))
+        subj_dirs.extend(expand('{out_dir}/sub-{subject}',out_dir=out_dir,subject=get_subjects(prefix)))
     return subj_dirs
  
 
 
-rule all:
+rule all_final_bids_validator:
+    input:
+        os.path.join(config['final_bids_dir'],'code','validator.txt')
+
+
+rule all_bids_validator:
     input:
         expand(
             'subj_bids/{prefix}/code/validator.txt',
@@ -77,7 +84,8 @@ rule convert_zip_to_nii:
     group: 'subj'
     script:
         'scripts/convert_zip_to_nii.py'
- 
+
+ruleorder: convert_zip_to_nii > convert_nii_to_bids > copy_bids_subj_to_final_bids
 
 rule convert_nii_to_bids:
     input:
@@ -99,7 +107,26 @@ rule convert_nii_to_bids:
         'scripts/convert_nii_to_bids.py'
 
 
-rule create_dd:
+def get_input_folder_bids(wildcards):
+    subject=wildcards.subject
+    prefix = prefixes[subjects.index(subject)]
+    return f'subj_bids/{prefix}/sub-{subject}'
+
+
+rule copy_bids_subj_to_final_bids:
+    input: 
+        get_input_folder_bids
+    output: 
+        directory('{bids_dir}/sub-{subject}')
+    params:
+    shell:
+        'cp -Rv {input} {output}'
+        
+ 
+
+ruleorder: update_dd > copy_dd   
+
+rule update_dd:
     input:
         json_file='resources/dataset_description.json',
     output:
@@ -107,23 +134,31 @@ rule create_dd:
     group: 'post'
     script: 'scripts/update_dataset_description.py'
    
-
+rule copy_dd:
+    input:
+        json_file='resources/dataset_description.json',
+    output:
+        json_file='{bids_dir}/dataset_description.json'
+    group: 'post'
+    shell: 'cp {input} {output}'
+ 
 
 rule copy_top_level:
     input:
         'resources/.bidsignore',
         'resources/task-rest_bold.json'
     output:
-        'subj_bids/{prefix}/.bidsignore',
-        'subj_bids/{prefix}/task-rest_bold.json'
+        '{bids_dir}/.bidsignore',
+        '{bids_dir}/task-rest_bold.json'
     group: 'post'
     run: 
         for infile,outfile in zip(input,output):
             shell('cp {infile} {outfile}')
 
         
+ruleorder: validate_dataset > validate_final_dataset
 
-rule validate:
+rule validate_dataset:
     input:
         dd='subj_bids/{prefix}/dataset_description.json',
         ignore='subj_bids/{prefix}/.bidsignore',
@@ -144,6 +179,27 @@ rule validate:
     shell:
         'singularity run {input.validator} {params.bids} {params.validator_opts} > {output.txt}'
 
+
+rule validate_final_dataset:
+    input:
+        get_output_final_bids,
+        tsv='{bids_dir}/participants.tsv',
+        dd='{bids_dir}/dataset_description.json',
+        ignore='{bids_dir}/.bidsignore',
+        json='{bids_dir}/task-rest_bold.json',
+        validator=config['singularity']['validator'],
+
+    params:
+        #ignore headers since limitation in validator with large datasets (issue #675 in validator) 
+        validator_opts = '--ignoreNiftiHeaders --ignoreSubjectConsistency --verbose',
+        bids = '{bids_dir}'
+    output:
+        txt = '{bids_dir}/code/validator.txt'
+    group: 'post'
+    shell:
+        'singularity run {input.validator} {params.bids} {params.validator_opts} > {output.txt}'
+
+
 rule delete_bad_scans:
     params:
         files_to_delete=config['bad_scans']
@@ -151,6 +207,8 @@ rule delete_bad_scans:
     shell:
         'rm -f {params.files_to_delete}'
 
+
+ruleorder: create_participants_tsv > create_final_participants_tsv
 
 rule create_participants_tsv:
     input:
@@ -161,34 +219,13 @@ rule create_participants_tsv:
     script:
         'scripts/create_participants_tsv.py' 
 
-
-rule all_final_bids:
-    input: 
-        get_output_final_bids(),
-        os.path.join(config['final_bids_dir'],'participants.tsv')
-
-
-def get_input_folder_bids(wildcards):
-    subject=wildcards.subject
-    prefix = prefixes[subjects.index(subject)]
-    return f'subj_bids/{prefix}/sub-{subject}'
-
-
-rule copy_bids_subj_to_final_bids:
-    input: 
-        get_input_folder_bids
-    output: 
-        directory(os.path.join(config['final_bids_dir'],'sub-{subject}'))
-    params:
-    shell:
-        'cp -Rv {input} {output}'
-        
-rule merge_tsvs:
+rule create_final_participants_tsv:
     input:
         tsv_files=expand('subj_bids/{prefix}/participants.tsv',prefix=list(set(prefixes)))
     output:
-        tsv_file=os.path.join(config['final_bids_dir'],'participants.tsv')
+        tsv_file='{bids_dir}/participant.tsv'
     script:
         'scripts/merge_participants_tsv.py'
 
-    
+
+   
